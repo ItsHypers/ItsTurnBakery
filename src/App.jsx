@@ -35,6 +35,49 @@ const EMPTY_MENU = {
   categories: [],
 };
 
+function getSessionValue(key) {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function setSessionValue(key, value) {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // The login still works for the current render; saving may ask again if storage is blocked.
+  }
+}
+
+function removeSessionValue(key) {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Nothing to clear when browser storage is unavailable.
+  }
+}
+
+function getStoredAdminPanel() {
+  try {
+    return {
+      ...EMPTY_ADMIN_PANEL,
+      ...JSON.parse(localStorage.getItem(ADMIN_PANEL_STORAGE_KEY) || '{}'),
+    };
+  } catch {
+    return EMPTY_ADMIN_PANEL;
+  }
+}
+
+function setStoredAdminPanel(panel) {
+  try {
+    localStorage.setItem(ADMIN_PANEL_STORAGE_KEY, JSON.stringify(panel));
+  } catch {
+    // Keep the notes editable in memory if local storage is unavailable.
+  }
+}
+
 function isAdminPath() {
   return window.location.pathname.replace(/\/+$/, '').endsWith('/admin');
 }
@@ -77,21 +120,12 @@ function isAdminPanelTab(tabId) {
 
 function App() {
   const [menu, setMenu] = useState(EMPTY_MENU);
-  const [adminPanel, setAdminPanel] = useState(() => {
-    try {
-      return {
-        ...EMPTY_ADMIN_PANEL,
-        ...JSON.parse(localStorage.getItem(ADMIN_PANEL_STORAGE_KEY) || '{}'),
-      };
-    } catch {
-      return EMPTY_ADMIN_PANEL;
-    }
-  });
+  const [adminPanel, setAdminPanel] = useState(getStoredAdminPanel);
   const [isLoadingMenu, setIsLoadingMenu] = useState(true);
   const [activeTabId, setActiveTabId] = useState(() => (isAdminPath() ? 'admin' : 'order-now'));
   const [isAdminRoute, setIsAdminRoute] = useState(isAdminPath);
   const [adminSession, setAdminSession] = useState(
-    () => Boolean(sessionStorage.getItem(ADMIN_CREDENTIALS_KEY)),
+    () => Boolean(getSessionValue(ADMIN_CREDENTIALS_KEY)),
   );
   const [adminForm, setAdminForm] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
@@ -217,7 +251,7 @@ function App() {
         throw new Error(result.error || 'Invalid username or password');
       }
 
-      sessionStorage.setItem(
+      setSessionValue(
         ADMIN_CREDENTIALS_KEY,
         btoa(`${adminForm.username}:${adminForm.password}`),
       );
@@ -236,7 +270,7 @@ function App() {
   }
 
   function handleAdminLogout() {
-    sessionStorage.removeItem(ADMIN_CREDENTIALS_KEY);
+    removeSessionValue(ADMIN_CREDENTIALS_KEY);
     setAdminSession(false);
     setMenuStatus('');
   }
@@ -250,7 +284,7 @@ function App() {
   }
 
   async function saveMenu(nextMenu = menu) {
-    const credentials = sessionStorage.getItem(ADMIN_CREDENTIALS_KEY);
+    const credentials = getSessionValue(ADMIN_CREDENTIALS_KEY);
 
     if (!credentials) {
       setMenuStatus('Sign in before saving menu changes.');
@@ -315,7 +349,7 @@ function App() {
         [field]: value,
       };
 
-      localStorage.setItem(ADMIN_PANEL_STORAGE_KEY, JSON.stringify(nextPanel));
+      setStoredAdminPanel(nextPanel);
       return nextPanel;
     });
   }
