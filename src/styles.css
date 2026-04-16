@@ -484,9 +484,12 @@ h3 {
   justify-self: start;
 }
 
-.admin-panel-grid {
-  display: grid;
-  gap: 18px;
+.admin-note-tab {
+  min-height: 440px;
+}
+
+.admin-note-tab textarea {
+  min-height: 400px;
 }
 
 .admin-items {

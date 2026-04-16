@@ -3,12 +3,32 @@ import { useEffect, useState } from 'react';
 const ADMIN_WORKER_URL = 'https://admin-panel.ryanathomas013.workers.dev';
 const ADMIN_CREDENTIALS_KEY = 'bakery-admin-credentials';
 const ADMIN_PANEL_STORAGE_KEY = 'bakery-admin-panel';
-const ADMIN_PANEL_TAB_ID = 'admin-panel';
+const ADMIN_PANEL_TABS = [
+  {
+    id: 'admin-orders',
+    field: 'orders',
+    label: 'Orders',
+    placeholder: 'Customer orders, pickup times, paid status, and special requests.',
+  },
+  {
+    id: 'admin-recipes',
+    field: 'recipes',
+    label: 'Potential Recipes',
+    placeholder: 'Ideas to test, ingredient notes, costing, and seasonal specials.',
+  },
+  {
+    id: 'admin-notes',
+    field: 'notes',
+    label: 'Note Board',
+    placeholder: "Reminders for the team, supplier notes, prep lists, and tomorrow's priorities.",
+  },
+];
 const EMPTY_ADMIN_PANEL = {
   orders: '',
   recipes: '',
   notes: '',
 };
+const DEFAULT_ADMIN_PANEL_TAB_ID = ADMIN_PANEL_TABS[0].id;
 const EMPTY_MENU = {
   businessName: '',
   orderPhone: '',
@@ -41,6 +61,10 @@ function normalizeMenu(menu) {
   };
 }
 
+function isAdminPanelTab(tabId) {
+  return ADMIN_PANEL_TABS.some((tab) => tab.id === tabId);
+}
+
 function App() {
   const [menu, setMenu] = useState(EMPTY_MENU);
   const [adminPanel, setAdminPanel] = useState(() => {
@@ -65,7 +89,7 @@ function App() {
   const [isSavingMenu, setIsSavingMenu] = useState(false);
   const [menuStatus, setMenuStatus] = useState('');
   const [selectedAdminCategoryId, setSelectedAdminCategoryId] = useState(
-    ADMIN_PANEL_TAB_ID,
+    DEFAULT_ADMIN_PANEL_TAB_ID,
   );
 
   useEffect(() => {
@@ -102,12 +126,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (selectedAdminCategoryId === ADMIN_PANEL_TAB_ID) {
+    if (isAdminPanelTab(selectedAdminCategoryId)) {
       return;
     }
 
     if (!menu.categories.some((category) => category.id === selectedAdminCategoryId)) {
-      setSelectedAdminCategoryId(ADMIN_PANEL_TAB_ID);
+      setSelectedAdminCategoryId(DEFAULT_ADMIN_PANEL_TAB_ID);
     }
   }, [menu.categories, selectedAdminCategoryId]);
 
@@ -588,13 +612,16 @@ function AdminPanel({
 
       <div className="admin-layout">
         <aside className="admin-sidebar" aria-label="Admin menu tabs">
-          <button
-            className={`admin-tab ${selectedAdminCategoryId === ADMIN_PANEL_TAB_ID ? 'is-active' : ''}`}
-            type="button"
-            onClick={() => onSelectCategory(ADMIN_PANEL_TAB_ID)}
-          >
-            Admin Panel
-          </button>
+          {ADMIN_PANEL_TABS.map((tab) => (
+            <button
+              className={`admin-tab ${selectedAdminCategoryId === tab.id ? 'is-active' : ''}`}
+              key={tab.id}
+              type="button"
+              onClick={() => onSelectCategory(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
           <button className="secondary-action" type="button" onClick={onAddCategory}>
             Add new tab
           </button>
@@ -611,34 +638,13 @@ function AdminPanel({
           ))}
         </aside>
 
-        {selectedAdminCategoryId === ADMIN_PANEL_TAB_ID ? (
+        {isAdminPanelTab(selectedAdminCategoryId) ? (
           <div className="admin-editor">
-            <div className="admin-panel-grid">
-              <label>
-                Orders
-                <textarea
-                  placeholder="Customer orders, pickup times, paid status, and special requests."
-                  value={adminPanel.orders}
-                  onChange={(event) => onUpdateAdminPanel('orders', event.target.value)}
-                />
-              </label>
-              <label>
-                Potential recipes
-                <textarea
-                  placeholder="Ideas to test, ingredient notes, costing, and seasonal specials."
-                  value={adminPanel.recipes}
-                  onChange={(event) => onUpdateAdminPanel('recipes', event.target.value)}
-                />
-              </label>
-              <label>
-                Note board
-                <textarea
-                  placeholder="Reminders for the team, supplier notes, prep lists, and tomorrow's priorities."
-                  value={adminPanel.notes}
-                  onChange={(event) => onUpdateAdminPanel('notes', event.target.value)}
-                />
-              </label>
-            </div>
+            <AdminPanelNoteTab
+              adminPanel={adminPanel}
+              selectedAdminCategoryId={selectedAdminCategoryId}
+              onUpdateAdminPanel={onUpdateAdminPanel}
+            />
           </div>
         ) : selectedAdminCategory ? (
           <div className="admin-editor">
@@ -775,6 +781,22 @@ function AdminPanel({
         )}
       </div>
     </div>
+  );
+}
+
+function AdminPanelNoteTab({ adminPanel, selectedAdminCategoryId, onUpdateAdminPanel }) {
+  const selectedTab =
+    ADMIN_PANEL_TABS.find((tab) => tab.id === selectedAdminCategoryId) ?? ADMIN_PANEL_TABS[0];
+
+  return (
+    <label className="admin-note-tab">
+      {selectedTab.label}
+      <textarea
+        placeholder={selectedTab.placeholder}
+        value={adminPanel[selectedTab.field]}
+        onChange={(event) => onUpdateAdminPanel(selectedTab.field, event.target.value)}
+      />
+    </label>
   );
 }
 
