@@ -34,16 +34,19 @@ const EMPTY_MENU = {
   orderPhone: '',
   categories: [],
 };
-const APP_BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 function isAdminPath() {
-  const pathname = window.location.pathname.replace(/\/+$/, '');
-  const appPath =
-    APP_BASE_PATH && pathname.startsWith(APP_BASE_PATH)
-      ? pathname.slice(APP_BASE_PATH.length) || '/'
-      : pathname;
+  return window.location.pathname.replace(/\/+$/, '').endsWith('/admin');
+}
 
-  return appPath === '/admin';
+function getAppHomePath() {
+  const pathname = window.location.pathname.replace(/\/+$/, '');
+
+  if (pathname.endsWith('/admin')) {
+    return `${pathname.slice(0, -'/admin'.length) || '/'}/`;
+  }
+
+  return './';
 }
 
 function createId(value) {
@@ -188,7 +191,7 @@ function App() {
 
   function showCustomerTab(tabId) {
     if (isAdminPath()) {
-      window.history.pushState({}, '', import.meta.env.BASE_URL);
+      window.history.pushState({}, '', getAppHomePath());
       setIsAdminRoute(false);
     }
 
